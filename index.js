@@ -15,7 +15,10 @@ const app = express();
  
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173'],
+  origin: ['http://localhost:5173',
+    'https://second-conceptual-fireba-c648e.web.app',
+    'https://second-conceptual-fireba-c648e.firebaseapp.com'
+  ],
   credentials: true,
 
 
@@ -52,14 +55,7 @@ const verifyToken = (req, res, next) => {
 
   })
 
-
-
-
-
 }
-
-
-
 
 
 
@@ -76,15 +72,14 @@ const client = new MongoClient(uri, {
   }
 });
 
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
-
-
 
 
     const JobsCollection = client.db('JobCollection').collection('jobs');
@@ -94,22 +89,26 @@ async function run() {
     // Auth releated
     app.post('/jwt', async (req, res) => {
       const user = req.body;
-      const token = jwt.sign(user, process.env.JWT_SECTET, { expiresIn: '1h' });
+      const token = jwt.sign(user, process.env.JWT_SECTET, { expiresIn: '10h' });
       res
         .cookie('token', token, {
           httpOnly: true,
-          secure: false,
+          secure:process.env.NODE_ENV='production',
+          sameSite:process.env.NODE_ENV==='production'?"none":'strict'
         })
         .send({ success: true });
     });
     
+
+
 
     
 
     app.post('/logout', (req, res) => {
       res.clearCookie('token', {
         httpOnly: true,
-        secure: false
+        secure: process.env.NODE_ENV='production',
+          sameSite:process.env.NODE_ENV==='production'?"none":'strict'
       })
         .send({ success: true })
     })
@@ -135,11 +134,9 @@ async function run() {
 
       }
 
-
       const cursor = JobsCollection.find(quary);
       const result = await cursor.toArray();
       res.send(result);
-
 
     })
 
